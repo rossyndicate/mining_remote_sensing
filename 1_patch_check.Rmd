@@ -1,0 +1,55 @@
+---
+title: "1_patch_check"
+author: "Matthew Ross"
+date: "4/24/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(sf)
+library(mapview)
+
+```
+
+# 1984 test
+
+## Read in data
+```{r}
+early <- st_read('data/lastMined_Polygons_1984-2015/1984_fullyProcessed.shp')
+
+early_area <- early %>%
+  mutate(area = st_area(early)) %>%
+  as_tibble()
+
+
+```
+
+## Transmute just NDVI
+
+```{r}
+early_ndvi <- early_area %>%
+  select(.,contains('NDVI'),id,area) %>%
+  gather(key=key,value=value,-area,-id) %>%
+  mutate(year=gsub('_NDVI','',key) %>%
+           gsub('X','',.) %>% as.numeric()) %>%
+  mutate(area_km2 = as.numeric(area)/(1000*1000))
+
+str(early_ndvi)
+ggplot(early_ndvi,aes(x=area_km2)) + 
+  geom_histogram()  + 
+  scale_x_log10()
+
+early_bins <- early_ndvi %>%
+  filter(area_km2 > .000703*9) %>%
+  mutate(bins = base::cut(area_km2,breaks=c(0,5,15,30))) %>%
+  group_by(bins,year) %>%
+  summarize(ndvi=mean(value,na.rm=T),
+            area=mean(area_km2))
+  
+library(ggthemes)
+ggplot(early_bins,aes(x=year,y=ndvi,color=area)) + 
+  geom_point() + 
+  theme_few()
+```
+
