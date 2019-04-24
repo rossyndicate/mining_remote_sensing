@@ -18,10 +18,10 @@ library(mapview)
 ```{r}
 early <- st_read('data/lastMined_Polygons_1984-2015/1984_fullyProcessed.shp')
 
+mapview(early[1:1000,])
 early_area <- early %>%
   mutate(area = st_area(early)) %>%
   as_tibble()
-
 
 ```
 
@@ -35,21 +35,21 @@ early_ndvi <- early_area %>%
            gsub('X','',.) %>% as.numeric()) %>%
   mutate(area_km2 = as.numeric(area)/(1000*1000))
 
-str(early_ndvi)
+
 ggplot(early_ndvi,aes(x=area_km2)) + 
   geom_histogram()  + 
   scale_x_log10()
 
 early_bins <- early_ndvi %>%
-  filter(area_km2 > .000703*9) %>%
+  #filter(area_km2 > .000703*1) %>%
   mutate(bins = base::cut(area_km2,breaks=c(0,5,15,30))) %>%
   group_by(bins,year) %>%
   summarize(ndvi=mean(value,na.rm=T),
             area=mean(area_km2))
   
 library(ggthemes)
-ggplot(early_bins,aes(x=year,y=ndvi,color=area)) + 
-  geom_point() + 
+ggplot(early_bins,aes(x=year,y=ndvi,color=area,group=area)) + 
+  stat_smooth(method='lm') + 
   theme_few()
 ```
 
